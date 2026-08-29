@@ -17,6 +17,7 @@ import {
 import { CarIllustration } from '@/components/car-illustration';
 import {
   addData,
+  apiMode,
   loadData,
   parkData,
   removeData,
@@ -80,7 +81,7 @@ export default function Home() {
       </header>
       <div className='dev-notice'>
         <span className='pulse' />
-        {text.mockNotice}
+        {apiMode ? text.apiNotice : text.mockNotice}
       </div>
       {backendUnavailable && (
         <div className='error-banner'>{text.backendUnavailable}</div>
