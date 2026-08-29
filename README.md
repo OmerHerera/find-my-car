@@ -147,6 +147,17 @@ To add a language, extend `Locale`, add an object with the same translation keys
 
 Vercel provides HTTPS, so browser geolocation is available after the user grants permission.
 
+## Favicon and Add to Home Screen
+
+The browser favicon is `src/app/icon.svg`. Installable app icons are generated in `public/icons/` at 192px and 512px, including an Android maskable icon. iOS uses `public/apple-touch-icon.png` at 180px. The web manifest launches the site in standalone mode with the app's navy theme.
+
+After deploying over HTTPS:
+
+- **iPhone/iPad:** open the site in a browser, open **Share**, choose **Add to Home Screen**, confirm the name, and tap **Add**. iOS does not show an automatic install prompt.
+- **Android/Chrome:** open the browser menu and choose **Install app** or **Add to Home screen**. Chrome may also show its install action automatically.
+
+A service worker is not required for Add to Home Screen and is intentionally not included. The installed app requires a network connection in API mode. Add a service worker later only if offline loading or queued offline writes become a product requirement.
+
 ## Testing
 
 Automated static checks:

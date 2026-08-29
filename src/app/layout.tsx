@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Barlow, Barlow_Condensed } from 'next/font/google';
 import './globals.css';
 
@@ -18,6 +18,23 @@ export const metadata: Metadata = {
   title: 'Find My Car',
   description: 'Keep track of where your family cars are parked.',
   applicationName: 'Find My Car',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Find My Car',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#061b2b',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
