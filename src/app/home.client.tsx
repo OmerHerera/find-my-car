@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Clock3,
   Languages,
@@ -359,7 +359,15 @@ function ParkingDialog({
   const [selectedQuickPick, setSelectedQuickPick] = useState<string | null>(
     null,
   );
-  const [gps, setGps] = useState<Extract<ParkingLocation, { type: "gps" }>>();
+  const [gps, setGps] = useState<
+    | (Extract<ParkingLocation, { type: "gps" }> & { address?: string })
+    | undefined
+  >();
+  const [geoStatus, setGeoStatus] = useState<
+    "idle" | "loading" | "success" | "denied" | "timeout"
+  >("idle");
+  const [geoMessage, setGeoMessage] = useState("");
+  const [accuracyWarning, setAccuracyWarning] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -374,10 +382,145 @@ function ParkingDialog({
     gps ??
     (manual.trim() ? { type: "manual", text: manual.trim() } : undefined);
 
+  const formatAddress = (latitude: number, longitude: number) =>
+    `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+  const reverseGeocode = useCallback(
+    async (latitude: number, longitude: number) => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              "Accept-Language": locale === "he" ? "he" : "en",
+            },
+          },
+        );
+
+        if (!response.ok) return undefined;
+        const data = (await response.json()) as {
+          address?: {
+            road?: string;
+            street?: string;
+            neighbourhood?: string;
+            suburb?: string;
+            town?: string;
+            city?: string;
+            village?: string;
+            house_number?: string;
+          };
+        };
+
+        const address = data.address;
+        const road = address?.road ?? address?.street ?? "";
+        const district =
+          address?.suburb ??
+          address?.neighbourhood ??
+          address?.village ??
+          address?.town ??
+          address?.city ??
+          "";
+        const house = address?.house_number ?? "";
+        const parts = [
+          house ? `${house}` : "",
+          road || "",
+          district || "",
+        ].filter(Boolean);
+
+        return parts.length ? parts.join(", ") : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    [locale],
+  );
+
+  const locate = useCallback(() => {
+    if (!navigator.geolocation) {
+      setSelectedQuickPick(null);
+      setGps(undefined);
+      setManual("");
+      setGeoStatus("denied");
+      setGeoMessage(text.gpsFailed);
+      setAccuracyWarning("");
+      requestAnimationFrame(() => inputRef.current?.focus());
+      return;
+    }
+
+    setGeoStatus("loading");
+    setGeoMessage("");
+    setAccuracyWarning("");
+    setMessage(text.locating);
+
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const nextGps = {
+          type: "gps" as const,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          accuracy: coords.accuracy,
+        };
+        const address = await reverseGeocode(coords.latitude, coords.longitude);
+
+        setGps({ ...nextGps, address });
+        setSelectedQuickPick(null);
+        setManual(formatAddress(coords.latitude, coords.longitude));
+        setGeoStatus("success");
+        setGeoMessage("");
+        setMessage(text.gpsReady);
+        setAccuracyWarning(coords.accuracy > 50 ? text.lowAccuracyWarning : "");
+      },
+      (error) => {
+        setSelectedQuickPick(null);
+        setGps(undefined);
+        setManual("");
+        setMessage("");
+        setGeoStatus(
+          error.code === error.PERMISSION_DENIED ? "denied" : "timeout",
+        );
+        setGeoMessage(
+          error.code === error.PERMISSION_DENIED
+            ? text.locationAccessNeeded
+            : text.gPSTimeout,
+        );
+        setAccuracyWarning("");
+      },
+      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 10_000 },
+    );
+  }, [
+    reverseGeocode,
+    text.gPSTimeout,
+    text.gpsFailed,
+    text.gpsReady,
+    text.locating,
+    text.locationAccessNeeded,
+    text.lowAccuracyWarning,
+  ]);
+
+  const openDeviceSettings = useCallback(() => {
+    if (typeof navigator === "undefined") return;
+    const userAgent = navigator.userAgent;
+    const target = /iPhone|iPad|iPod/i.test(userAgent)
+      ? "app-settings:"
+      : /Android/i.test(userAgent)
+        ? "app-settings:location"
+        : undefined;
+
+    if (target) {
+      window.location.href = target;
+      return;
+    }
+
+    locate();
+  }, [locate]);
+
   const handleQuickPick = (value: string) => {
     setSelectedQuickPick(value);
     setManual(value);
     setGps(undefined);
+    setGeoStatus("idle");
+    setGeoMessage("");
+    setAccuracyWarning("");
     setMessage("");
   };
 
@@ -390,43 +533,27 @@ function ParkingDialog({
     }
     setGps(undefined);
     setManual(value);
+    setGeoStatus("idle");
+    setGeoMessage("");
+    setAccuracyWarning("");
+    setMessage("");
   };
 
-  const locate = () => {
-    if (!navigator.geolocation) {
-      setSelectedQuickPick(null);
-      setGps(undefined);
-      setManual("");
-      setMessage(text.gpsFailed);
-      requestAnimationFrame(() => inputRef.current?.focus());
-      return;
-    }
+  useEffect(() => {
+    locate();
+  }, [locate]);
 
-    setMessage(text.locating);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setGps({
-          type: "gps",
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          accuracy: coords.accuracy,
-        });
-        setSelectedQuickPick(null);
-        setManual(
-          `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
-        );
-        setMessage(text.gpsReady);
-      },
-      () => {
-        setSelectedQuickPick(null);
-        setGps(undefined);
-        setManual("");
-        setMessage(text.gpsFailed);
-        requestAnimationFrame(() => inputRef.current?.focus());
-      },
-      { enableHighAccuracy: true, timeout: 12_000, maximumAge: 10_000 },
-    );
-  };
+  const mapBackground = gps
+    ? `linear-gradient(180deg, rgba(6, 13, 18, 0.08), rgba(6, 13, 18, 0.18)), url("https://staticmap.openstreetmap.de/staticmap.php?center=${gps.latitude},${gps.longitude}&zoom=18&size=1000x420&maptype=mapnik")`
+    : undefined;
+
+  const previewAriaLabel = gps
+    ? `Current location: ${gps.address ?? formatAddress(gps.latitude, gps.longitude)}`
+    : "Current location preview";
+
+  const locationLabel =
+    gps?.address ??
+    (gps ? formatAddress(gps.latitude, gps.longitude) : text.addressUnknown);
 
   return (
     <Dialog
@@ -438,25 +565,91 @@ function ParkingDialog({
         <div className="location-picker-header">{text.selectLocationType}</div>
 
         <button
-          className={`capture-button ${gps ? "selected" : ""}`}
+          type="button"
+          className={`location-preview ${gps ? "has-location" : ""} ${
+            geoStatus === "loading" ? "loading" : ""
+          }`}
           onClick={locate}
+          aria-label={previewAriaLabel}
         >
-          <span className="capture-marker">
-            <LocateFixed />
-          </span>
-          <span className="capture-copy">
-            {message === text.locating
-              ? text.locating
-              : gps
-                ? text.gpsReady
-                : text.useGps}
-          </span>
-          {gps && (
-            <small>
-              {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}
-            </small>
+          <span className="preview-badge">{text.livePreview}</span>
+
+          {geoStatus === "loading" ? (
+            <div className="preview-loading" aria-live="polite">
+              <span className="spinner" />
+              <span>{text.locating}</span>
+            </div>
+          ) : geoStatus === "success" && gps ? (
+            <>
+              <div
+                className="map-surface"
+                style={
+                  mapBackground ? { backgroundImage: mapBackground } : undefined
+                }
+                role="img"
+                aria-label={previewAriaLabel}
+              >
+                <div className="map-pin" aria-hidden="true">
+                  <span className="map-pin-core" />
+                </div>
+              </div>
+              <div className="preview-meta">
+                <span className="preview-address">{locationLabel}</span>
+              </div>
+              {typeof gps.accuracy === "number" && (
+                <span className="accuracy-pill">
+                  ± {Math.round(gps.accuracy)} m {text.accuracyLabel}
+                </span>
+              )}
+            </>
+          ) : (
+            <div className="preview-empty" aria-live="polite">
+              <span className="capture-marker">
+                <LocateFixed />
+              </span>
+              <span className="capture-copy">{text.useGps}</span>
+            </div>
           )}
         </button>
+
+        {geoStatus === "denied" && (
+          <div className="geo-inline-state error">
+            <p>{geoMessage || text.locationAccessNeeded}</p>
+            <div className="geo-actions">
+              <button
+                type="button"
+                className="inline-action"
+                onClick={openDeviceSettings}
+              >
+                {text.openSettings}
+              </button>
+              <button
+                type="button"
+                className="inline-action secondary"
+                onClick={locate}
+              >
+                {text.retry}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {geoStatus === "timeout" && (
+          <div className="geo-inline-state warning">
+            <p>{geoMessage || text.gPSTimeout}</p>
+            <button
+              type="button"
+              className="inline-action secondary"
+              onClick={locate}
+            >
+              {text.retry}
+            </button>
+          </div>
+        )}
+
+        {accuracyWarning && (
+          <p className="helper warning-inline">{accuracyWarning}</p>
+        )}
 
         <div className="quick-picks-label">{text.quickSelect}</div>
         <div className="quick-picks">
@@ -493,6 +686,9 @@ function ParkingDialog({
                 setSelectedQuickPick(null);
                 setGps(undefined);
                 setManual("");
+                setGeoStatus("idle");
+                setGeoMessage("");
+                setAccuracyWarning("");
                 setMessage("");
               }}
             >

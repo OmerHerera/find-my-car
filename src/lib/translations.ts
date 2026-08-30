@@ -46,6 +46,17 @@ export const copy = {
     gpsReady: "Location ready",
     gpsFailed:
       "GPS is unavailable or permission was denied. Enter a location instead.",
+    livePreview: "Live preview",
+    addressUnknown: "Current location captured",
+    locationAccessNeeded:
+      "Location access is needed to capture your current parking spot.",
+    openSettings: "Open settings",
+    retry: "Retry",
+    gPSTimeout:
+      "Location signal timed out. Try again or choose a quick-select option.",
+    lowAccuracyWarning:
+      "Accuracy is low. Consider adjusting the pin manually or choosing a quick-select option.",
+    accuracyLabel: "accuracy",
     manualHint: "Herzl St. near the bakery",
     confirm: "Confirm parking",
     settings: "Settings",
@@ -111,6 +122,15 @@ export const copy = {
     locating: "מאתר את המיקום...",
     gpsReady: "המיקום מוכן",
     gpsFailed: "ה-GPS אינו זמין או שההרשאה נדחתה. אפשר להזין מיקום ידנית.",
+    livePreview: "תצוגה חיה",
+    addressUnknown: "המיקום הנוכחי נלכד",
+    locationAccessNeeded: "נדרשת גישה למיקום כדי ללכוד את מיקום החניה הנוכחי.",
+    openSettings: "פתח הגדרות",
+    retry: "נסו שוב",
+    gPSTimeout: "אות המיקום אוזל. נסו שוב או בחרו אפשרות מהירה.",
+    lowAccuracyWarning:
+      "דיוק המיקום נמוך. כדאי להתאים את המיקום ידנית או לבחור אפשרות מהירה.",
+    accuracyLabel: "דיוק",
     manualHint: "רחוב הרצל ליד המאפייה",
     confirm: "אישור חניה",
     settings: "הגדרות",
