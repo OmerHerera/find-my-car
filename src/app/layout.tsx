@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import "./globals.css";
+import { cookies } from "next/headers";
 
 const bodyFont = Barlow({
   variable: "--font-body",
@@ -38,9 +39,25 @@ export const viewport: Viewport = {
   themeColor: "#061b2b",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const cookieLocale = await (async () => {
+    try {
+      const c = await cookies();
+      const found = c.get("find-my-car-locale");
+      return found?.value === "he" ? "he" : "en";
+    } catch {
+      return "en";
+    }
+  })();
+
+  const dir = cookieLocale === "he" ? "rtl" : "ltr";
+
   return (
-    <html lang="en" className={`${bodyFont.variable} ${displayFont.variable}`}>
+    <html
+      lang={cookieLocale}
+      dir={dir}
+      className={`${bodyFont.variable} ${displayFont.variable}`}
+    >
       <body>
         {children}
         <Analytics />
