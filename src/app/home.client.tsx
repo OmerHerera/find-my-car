@@ -297,8 +297,11 @@ function CarCard({
             <span className="location-kind">
               {location?.type === "gps" ? text.gpsLabel : text.manualLabel}
             </span>
-            {text.parkedBy} {car.parking.memberName || text.unknownUser} ·{" "}
-            {relativeTime(car.parking.parkedAt, locale)}
+            {car.parking.memberName || text.unknownUser} ·{" "}
+            {new Intl.DateTimeFormat(locale, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(new Date(car.parking.parkedAt))}
           </div>
         )}
       </div>
@@ -376,6 +379,7 @@ function ParkingDialog({
     text.quickOffice,
     text.quickBakery,
     text.quickMall,
+    text.quickNarrow,
   ];
 
   const location: ParkingLocation | undefined =
@@ -540,7 +544,11 @@ function ParkingDialog({
   };
 
   useEffect(() => {
-    locate();
+    const frameId = requestAnimationFrame(() => {
+      locate();
+    });
+
+    return () => cancelAnimationFrame(frameId);
   }, [locate]);
 
   const mapBackground = gps
@@ -992,24 +1000,4 @@ function Dialog({
       </section>
     </div>
   );
-}
-
-function relativeTime(value: string, locale: Locale) {
-  const text = copy[locale];
-  const deltaMs = Date.now() - new Date(value).getTime();
-  const seconds = Math.round(deltaMs / 1000);
-
-  // Very recent times: use explicit 'now' translation
-  if (Math.abs(seconds) < 45) return text.now;
-
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-
-  const minutes = Math.round(seconds / 60);
-  if (Math.abs(minutes) < 60) return rtf.format(-minutes, "minute");
-
-  const hours = Math.round(minutes / 60);
-  if (Math.abs(hours) < 24) return rtf.format(-hours, "hour");
-
-  const days = Math.round(hours / 24);
-  return rtf.format(-days, "day");
 }

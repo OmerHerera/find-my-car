@@ -699,20 +699,28 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 12px;
+  padding: 8px 12px;
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.02);
   font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .quick-pick.active {
   color: #fff;
   border-color: var(--blue);
   background: var(--blue);
+}
+
+@media (max-width: 560px) {
+  .quick-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .search-field {
   position: relative;
