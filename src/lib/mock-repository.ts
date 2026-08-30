@@ -1,21 +1,33 @@
-import type { Car, NewCar, ParkingEvent, ParkingLocation } from './types';
+import type { Car, NewCar, ParkingEvent, ParkingLocation } from "./types";
 
-const storageKey = 'find-my-car/cars';
+const storageKey = "find-my-car/cars";
+const HISTORY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const now = Date.now();
+
+function trimHistory(events: ParkingEvent[]) {
+  const cutoff = Date.now() - HISTORY_RETENTION_MS;
+  return [...events]
+    .filter((event) => new Date(event.parkedAt).getTime() >= cutoff)
+    .sort(
+      (left, right) =>
+        new Date(right.parkedAt).getTime() - new Date(left.parkedAt).getTime(),
+    );
+}
+
 export const seedCars: Car[] = [
   {
-    id: 'blue-family-car',
-    name: 'Blue car',
-    color: '#159bf3',
-    carStyle: 'sedan',
-    plate: '42-718-63',
+    id: "blue-family-car",
+    name: "Blue car",
+    color: "#159bf3",
+    carStyle: "sedan",
+    plate: "42-718-63",
     parking: {
-      id: 'parking-1',
-      carId: 'blue-family-car',
-      memberName: 'Daniel',
+      id: "parking-1",
+      carId: "blue-family-car",
+      memberName: "Daniel",
       parkedAt: new Date(now - 22 * 60_000).toISOString(),
       location: {
-        type: 'gps',
+        type: "gps",
         latitude: 32.0809,
         longitude: 34.7806,
         accuracy: 12,
@@ -24,29 +36,29 @@ export const seedCars: Car[] = [
     history: [],
   },
   {
-    id: 'white-family-car',
-    name: 'White car',
-    color: '#e7edf4',
-    carStyle: 'suv',
-    plate: '18-305-22',
+    id: "white-family-car",
+    name: "White car",
+    color: "#e7edf4",
+    carStyle: "suv",
+    plate: "18-305-22",
     parking: {
-      id: 'parking-2',
-      carId: 'white-family-car',
-      memberName: 'Maya',
+      id: "parking-2",
+      carId: "white-family-car",
+      memberName: "Maya",
       parkedAt: new Date(now - 3 * 60 * 60_000).toISOString(),
       location: {
-        type: 'manual',
-        text: 'Behind the building, near the red gate',
+        type: "manual",
+        text: "Behind the building, near the red gate",
       },
     },
     history: [],
   },
   {
-    id: 'green-family-car',
-    name: 'Green car',
-    color: '#50c99a',
-    carStyle: 'hatchback',
-    plate: '73-904-11',
+    id: "green-family-car",
+    name: "Green car",
+    color: "#50c99a",
+    carStyle: "hatchback",
+    plate: "73-904-11",
     history: [],
   },
 ];
@@ -58,10 +70,15 @@ export function loadCars(): Car[] {
   try {
     const stored = localStorage.getItem(storageKey);
     return stored
-      ? (JSON.parse(stored) as Car[]).map((car) => ({
-          ...car,
-          carStyle: car.carStyle ?? 'sedan',
-        }))
+      ? (JSON.parse(stored) as Car[]).map((car) => {
+          const history = trimHistory(car.history ?? []);
+          return {
+            ...car,
+            carStyle: car.carStyle ?? "sedan",
+            parking: history[0] ?? undefined,
+            history,
+          };
+        })
       : cloneSeed();
   } catch {
     return cloneSeed();
@@ -101,11 +118,15 @@ export function parkCar(
     parkedAt: new Date().toISOString(),
     location,
   };
-  const next = cars.map((car) =>
-    car.id === carId
-      ? { ...car, parking: event, history: [event, ...car.history] }
-      : car,
-  );
+  const next = cars.map((car) => {
+    if (car.id !== carId) return car;
+    const history = trimHistory([event, ...car.history]);
+    return {
+      ...car,
+      parking: history[0] ?? undefined,
+      history,
+    };
+  });
   saveCars(next);
   return next;
 }

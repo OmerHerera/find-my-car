@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Clock3,
   Languages,
@@ -9,6 +9,7 @@ import {
   Navigation,
   Pencil,
   Plus,
+  Search,
   Settings,
   Trash2,
   UserRound,
@@ -353,17 +354,54 @@ function ParkingDialog({
   onSave: (location: ParkingLocation) => Promise<void>;
 }) {
   const text = copy[locale];
-  const [mode, setMode] = useState<"gps" | "manual">("gps");
+  const inputRef = useRef<HTMLInputElement>(null);
   const [manual, setManual] = useState("");
+  const [selectedQuickPick, setSelectedQuickPick] = useState<string | null>(
+    null,
+  );
   const [gps, setGps] = useState<Extract<ParkingLocation, { type: "gps" }>>();
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const quickPicks = [
+    text.quickHome,
+    text.quickOffice,
+    text.quickBakery,
+    text.quickMall,
+  ];
+
+  const location: ParkingLocation | undefined =
+    gps ??
+    (manual.trim() ? { type: "manual", text: manual.trim() } : undefined);
+
+  const handleQuickPick = (value: string) => {
+    setSelectedQuickPick(value);
+    setManual(value);
+    setGps(undefined);
+    setMessage("");
+  };
+
+  const handleManualChange = (value: string) => {
+    if (selectedQuickPick && value !== selectedQuickPick) {
+      setSelectedQuickPick(null);
+    }
+    if (value === "") {
+      setSelectedQuickPick(null);
+    }
+    setGps(undefined);
+    setManual(value);
+  };
+
   const locate = () => {
     if (!navigator.geolocation) {
-      setMode("manual");
+      setSelectedQuickPick(null);
+      setGps(undefined);
+      setManual("");
       setMessage(text.gpsFailed);
+      requestAnimationFrame(() => inputRef.current?.focus());
       return;
     }
+
     setMessage(text.locating);
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
@@ -373,76 +411,115 @@ function ParkingDialog({
           longitude: coords.longitude,
           accuracy: coords.accuracy,
         });
+        setSelectedQuickPick(null);
+        setManual(
+          `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`,
+        );
         setMessage(text.gpsReady);
       },
       () => {
-        setMode("manual");
+        setSelectedQuickPick(null);
+        setGps(undefined);
+        setManual("");
         setMessage(text.gpsFailed);
+        requestAnimationFrame(() => inputRef.current?.focus());
       },
       { enableHighAccuracy: true, timeout: 12_000, maximumAge: 10_000 },
     );
   };
-  const location: ParkingLocation | undefined =
-    mode === "gps"
-      ? gps
-      : manual.trim()
-        ? { type: "manual", text: manual.trim() }
-        : undefined;
+
   return (
     <Dialog
       title={`${text.parkTitle} ${car.name}`}
       close={text.close}
       onClose={onClose}
     >
-      <div className="segments">
+      <div className="parking-dialog">
+        <div className="location-picker-header">{text.selectLocationType}</div>
+
         <button
-          className={mode === "gps" ? "active" : ""}
-          onClick={() => setMode("gps")}
+          className={`capture-button ${gps ? "selected" : ""}`}
+          onClick={locate}
         >
-          {text.gps}
-        </button>
-        <button
-          className={mode === "manual" ? "active" : ""}
-          onClick={() => setMode("manual")}
-        >
-          {text.manual}
-        </button>
-      </div>
-      {mode === "gps" ? (
-        <button className="capture" onClick={locate}>
-          <LocateFixed />
-          <strong>{gps ? text.gpsReady : text.useGps}</strong>
+          <span className="capture-marker">
+            <LocateFixed />
+          </span>
+          <span className="capture-copy">
+            {message === text.locating
+              ? text.locating
+              : gps
+                ? text.gpsReady
+                : text.useGps}
+          </span>
           {gps && (
             <small>
               {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}
             </small>
           )}
         </button>
-      ) : (
-        <input
-          autoFocus
-          value={manual}
-          onChange={(event) => setManual(event.target.value)}
-          placeholder={text.manualHint}
-        />
-      )}
-      {message && <p className="helper">{message}</p>}
-      <button
-        className="confirm"
-        disabled={!location || saving}
-        onClick={async () => {
-          if (!location) return;
-          setSaving(true);
-          try {
-            await onSave(location);
-          } catch {
-            setMessage(text.saveFailed);
-            setSaving(false);
-          }
-        }}
-      >
-        {text.confirm}
-      </button>
+
+        <div className="quick-picks-label">{text.quickSelect}</div>
+        <div className="quick-picks">
+          {quickPicks.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={
+                selectedQuickPick === value ? "quick-pick active" : "quick-pick"
+              }
+              onClick={() => handleQuickPick(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+
+        <div className="manual-entry-label">{text.orEnterManually}</div>
+        <div className="search-field">
+          <Search />
+          <input
+            ref={inputRef}
+            value={manual}
+            onChange={(event) => handleManualChange(event.target.value)}
+            placeholder={text.manualHint}
+            aria-label={text.manualHint}
+          />
+          {manual && (
+            <button
+              type="button"
+              className="clear-input"
+              aria-label={text.clearInput}
+              onClick={() => {
+                setSelectedQuickPick(null);
+                setGps(undefined);
+                setManual("");
+                setMessage("");
+              }}
+            >
+              <X />
+            </button>
+          )}
+        </div>
+
+        {message && <p className="helper">{message}</p>}
+
+        <button
+          className="confirm"
+          disabled={!location || saving}
+          onClick={async () => {
+            if (!location) return;
+            setSaving(true);
+            try {
+              await onSave(location);
+            } catch {
+              setMessage(text.saveFailed);
+              setSaving(false);
+            }
+          }}
+        >
+          {text.confirm}
+        </button>
+      </div>
     </Dialog>
   );
 }

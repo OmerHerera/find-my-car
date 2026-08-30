@@ -1,9 +1,10 @@
-import { randomUUID } from 'node:crypto';
-import { Pool } from 'pg';
-import type { Car, NewCar, ParkingEvent, ParkingLocation } from '../types';
+import { randomUUID } from "node:crypto";
+import { Pool } from "pg";
+import type { Car, NewCar, ParkingEvent, ParkingLocation } from "../types";
 
 const globalDatabase = globalThis as typeof globalThis & { carPool?: Pool };
 const connectionString = process.env.DATABASE_URL;
+const HISTORY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const pool = connectionString
   ? (globalDatabase.carPool ??
     new Pool({
@@ -12,12 +13,22 @@ const pool = connectionString
       connectionTimeoutMillis: 2_500,
     }))
   : undefined;
-if (pool && process.env.NODE_ENV !== 'production')
+if (pool && process.env.NODE_ENV !== "production")
   globalDatabase.carPool = pool;
+
+function trimHistory(events: ParkingEvent[]) {
+  const cutoff = Date.now() - HISTORY_RETENTION_MS;
+  return [...events]
+    .filter((event) => new Date(event.parkedAt).getTime() >= cutoff)
+    .sort(
+      (left, right) =>
+        new Date(right.parkedAt).getTime() - new Date(left.parkedAt).getTime(),
+    );
+}
 
 export class DatabaseUnavailableError extends Error {}
 function requirePool() {
-  if (!pool) throw new DatabaseUnavailableError('Database is not configured');
+  if (!pool) throw new DatabaseUnavailableError("Database is not configured");
   return pool;
 }
 
@@ -27,7 +38,7 @@ export async function listCars(): Promise<Car[]> {
     COALESCE(json_agg(json_build_object('id', e.id, 'carId', e.car_id, 'memberName', e.member_name, 'parkedAt', e.parked_at, 'location', e.location) ORDER BY e.parked_at DESC) FILTER (WHERE e.id IS NOT NULL), '[]') AS history
     FROM cars c LEFT JOIN parking_events e ON e.car_id = c.id GROUP BY c.id ORDER BY c.created_at`);
   return result.rows.map((row) => {
-    const history = row.history as ParkingEvent[];
+    const history = trimHistory(row.history as ParkingEvent[]);
     return {
       id: row.id,
       name: row.name,
@@ -42,7 +53,7 @@ export async function listCars(): Promise<Car[]> {
 
 export async function createCar(input: NewCar): Promise<Car> {
   const result = await requirePool().query(
-    'INSERT INTO cars (id, name, color, car_style, plate) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, color, car_style, plate',
+    "INSERT INTO cars (id, name, color, car_style, plate) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, color, car_style, plate",
     [
       randomUUID(),
       input.name,
@@ -64,7 +75,7 @@ export async function updateCar(
   input: NewCar,
 ): Promise<Car | undefined> {
   const result = await requirePool().query(
-    'UPDATE cars SET name = $2, color = $3, car_style = $4, plate = $5 WHERE id = $1 RETURNING id',
+    "UPDATE cars SET name = $2, color = $3, car_style = $4, plate = $5 WHERE id = $1 RETURNING id",
     [carId, input.name, input.color, input.carStyle, input.plate ?? null],
   );
   if (!result.rowCount) return undefined;
@@ -72,7 +83,7 @@ export async function updateCar(
 }
 
 export async function deleteCar(carId: string): Promise<boolean> {
-  const result = await requirePool().query('DELETE FROM cars WHERE id = $1', [
+  const result = await requirePool().query("DELETE FROM cars WHERE id = $1", [
     carId,
   ]);
   return Boolean(result.rowCount);
@@ -84,7 +95,7 @@ export async function createParking(
   location: ParkingLocation,
 ): Promise<Car | undefined> {
   const result = await requirePool().query(
-    'INSERT INTO parking_events (id, car_id, member_name, location) SELECT $1, id, $3, $4 FROM cars WHERE id = $2 RETURNING id',
+    "INSERT INTO parking_events (id, car_id, member_name, location) SELECT $1, id, $3, $4 FROM cars WHERE id = $2 RETURNING id",
     [randomUUID(), carId, memberName, location],
   );
   if (!result.rowCount) return undefined;
