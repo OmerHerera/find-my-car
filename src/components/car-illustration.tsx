@@ -31,9 +31,11 @@ const shapes: Record<CarStyle, CarShape> = {
 export function CarIllustration({
   color,
   carStyle = 'sedan',
+  ariaLabel,
 }: {
   color: string;
   carStyle?: CarStyle;
+  ariaLabel?: string;
 }) {
   const shape = shapes[carStyle];
   const gradientId = `paint-${carStyle}-${color.replace('#', '')}`;
@@ -41,7 +43,7 @@ export function CarIllustration({
     <svg
       viewBox='0 0 320 150'
       role='img'
-      aria-label={`${carStyle} car illustration`}
+      aria-label={ariaLabel ?? `${carStyle} car illustration`}
     >
       <defs>
         <linearGradient id={gradientId} x1='0' y1='0' x2='0.8' y2='1'>
