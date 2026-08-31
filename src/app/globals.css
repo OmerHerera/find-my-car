@@ -142,7 +142,7 @@ h1 {
 }
 .car-skeleton-line::after,
 .car-skeleton-box::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
@@ -404,25 +404,6 @@ h1 {
   border-color: #d95c67;
   background: #7a252e;
 }
-.add-card {
-  min-height: 82px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  color: var(--text);
-  border: 1px dashed #376177;
-  border-radius: 8px;
-  background: rgba(11, 25, 34, 0.62);
-  font-weight: 800;
-}
-.add-card:hover {
-  border-color: var(--blue);
-  background: #0b2638;
-}
-.add-card svg {
-  color: var(--blue);
-}
 .dialog-layer {
   position: fixed;
   z-index: 20;
@@ -614,7 +595,7 @@ h1 {
   filter: drop-shadow(0 8px 12px rgba(12, 19, 23, 0.35));
 }
 .map-pin::before {
-  content: "";
+  content: '';
   position: absolute;
   width: 30px;
   height: 30px;

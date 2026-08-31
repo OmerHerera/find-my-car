@@ -8,7 +8,6 @@ import {
   MapPin,
   Navigation,
   Pencil,
-  Plus,
   Search,
   Settings,
   Trash2,
@@ -17,7 +16,6 @@ import {
 } from 'lucide-react';
 import { CarIllustration } from '@/components/car-illustration';
 import {
-  addData,
   apiMode,
   loadData,
   parkData,
@@ -34,7 +32,7 @@ import type { Car, CarStyle, NewCar, ParkingLocation } from '@/lib/types';
 
 type Panel =
   | { kind: 'park' | 'history' | 'edit' | 'remove'; car: Car }
-  | { kind: 'add' | 'settings' }
+  | { kind: 'settings' }
   | null;
 
 export default function HomeClient({
@@ -148,10 +146,6 @@ export default function HomeClient({
             onRemove={() => setPanel({ kind: 'remove', car })}
           />
         ))}
-        <button className='add-card' onClick={() => setPanel({ kind: 'add' })}>
-          <Plus />
-          {text.addCar}
-        </button>
       </section>
       {panel?.kind === 'park' && (
         <ParkingDialog
@@ -176,16 +170,6 @@ export default function HomeClient({
           car={panel.car}
           locale={locale}
           onClose={() => setPanel(null)}
-        />
-      )}
-      {panel?.kind === 'add' && (
-        <AddDialog
-          locale={locale}
-          onClose={() => setPanel(null)}
-          onSave={async (input) => {
-            setCars(await addData(currentCars, input));
-            setPanel(null);
-          }}
         />
       )}
       {panel?.kind === 'edit' && (
@@ -726,14 +710,6 @@ function ParkingDialog({
       </div>
     </Dialog>
   );
-}
-
-function AddDialog(props: {
-  locale: Locale;
-  onClose: () => void;
-  onSave: (input: NewCar) => Promise<void>;
-}) {
-  return <CarFormDialog {...props} />;
 }
 
 function SettingsDialog({
