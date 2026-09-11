@@ -38,7 +38,7 @@ export const copy = {
     orEnterManually: 'Or enter manually',
     quickHome: 'Right',
     quickOffice: 'Left',
-    quickBakery: 'Pavement',
+    quickBakery: 'In side',
     quickMall: 'Street entrance',
     quickNarrow: 'Handicapped parking',
     clearInput: 'Clear location',

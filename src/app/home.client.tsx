@@ -22,6 +22,7 @@ import {
   removeData,
   updateData,
 } from '@/lib/data-repository';
+import { findZoneId, zoneMessage } from '@/lib/geofence';
 import {
   defaultPreferences,
   loadPreferences,
@@ -234,7 +235,8 @@ function CarCard({
     location?.type === 'manual'
       ? location.text
       : location
-        ? `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`
+        ? (zoneMessage(location.areaId, locale) ??
+          `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`)
         : text.noLocationSaved;
 
   return (
@@ -442,17 +444,23 @@ function ParkingDialog({
 
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
+        const areaId = findZoneId(coords.latitude, coords.longitude);
         const nextGps = {
           type: 'gps' as const,
           latitude: coords.latitude,
           longitude: coords.longitude,
           accuracy: coords.accuracy,
+          areaId,
         };
         const address = await reverseGeocode(coords.latitude, coords.longitude);
 
         setGps({ ...nextGps, address });
         setSelectedQuickPick(null);
-        setManual(formatAddress(coords.latitude, coords.longitude));
+        setManual(
+          zoneMessage(areaId, locale) ??
+            address ??
+            formatAddress(coords.latitude, coords.longitude),
+        );
         setGeoStatus('success');
         setGeoMessage('');
         setMessage(text.gpsReady);
@@ -476,6 +484,7 @@ function ParkingDialog({
       { enableHighAccuracy: true, timeout: 12_000, maximumAge: 10_000 },
     );
   }, [
+    locale,
     reverseGeocode,
     text.gPSTimeout,
     text.gpsFailed,
@@ -539,13 +548,15 @@ function ParkingDialog({
     ? `linear-gradient(180deg, rgba(6, 13, 18, 0.08), rgba(6, 13, 18, 0.18)), url("https://staticmap.openstreetmap.de/staticmap.php?center=${gps.latitude},${gps.longitude}&zoom=18&size=1000x420&maptype=mapnik")`
     : undefined;
 
-  const previewAriaLabel = gps
-    ? `Current location: ${gps.address ?? formatAddress(gps.latitude, gps.longitude)}`
-    : 'Current location preview';
-
-  const locationLabel =
+  const addressLabel =
     gps?.address ??
     (gps ? formatAddress(gps.latitude, gps.longitude) : text.addressUnknown);
+  const areaLabel = zoneMessage(gps?.areaId, locale);
+  const locationLabel = areaLabel ?? addressLabel;
+
+  const previewAriaLabel = gps
+    ? `Current location: ${locationLabel}`
+    : 'Current location preview';
 
   return (
     <Dialog
@@ -587,6 +598,11 @@ function ParkingDialog({
               </div>
               <div className='preview-meta'>
                 <span className='preview-address'>{locationLabel}</span>
+                {areaLabel && gps.address && (
+                  <span className='preview-address-secondary'>
+                    {gps.address}
+                  </span>
+                )}
               </div>
               {typeof gps.accuracy === 'number' && (
                 <span className='accuracy-pill'>
@@ -925,7 +941,8 @@ function HistoryDialog({
                 <strong>
                   {event.location.type === 'manual'
                     ? event.location.text
-                    : `${event.location.latitude.toFixed(5)}, ${event.location.longitude.toFixed(5)}`}
+                    : (zoneMessage(event.location.areaId, locale) ??
+                      `${event.location.latitude.toFixed(5)}, ${event.location.longitude.toFixed(5)}`)}
                 </strong>
                 <small>
                   {event.memberName || text.unknownUser} ·{' '}

@@ -9,6 +9,7 @@ const location = z.discriminatedUnion('type', [
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
     accuracy: z.number().nonnegative().optional(),
+    areaId: z.string().trim().min(1).max(60).optional(),
   }),
   z.object({
     type: z.literal('manual'),
