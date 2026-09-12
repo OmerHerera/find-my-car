@@ -457,9 +457,11 @@ function ParkingDialog({
         setGps({ ...nextGps, address });
         setSelectedQuickPick(null);
         setManual(
-          zoneMessage(areaId, locale) ??
-            address ??
-            formatAddress(coords.latitude, coords.longitude),
+          areaId
+            ? (zoneMessage(areaId, locale) ??
+                address ??
+                formatAddress(coords.latitude, coords.longitude))
+            : '',
         );
         setGeoStatus('success');
         setGeoMessage('');
