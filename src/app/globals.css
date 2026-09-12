@@ -618,9 +618,9 @@ h1 {
   inset-inline: 12px;
   bottom: 38px;
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   pointer-events: none;
 }
 .preview-address {
@@ -632,6 +632,20 @@ h1 {
   color: #edf7ff;
   font-size: 0.73rem;
   font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.preview-address-secondary {
+  display: inline-block;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(7, 13, 18, 0.45);
+  color: #cfe3f2;
+  font-size: 0.65rem;
+  font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;

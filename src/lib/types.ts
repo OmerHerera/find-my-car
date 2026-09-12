@@ -1,5 +1,11 @@
 export type ParkingLocation =
-  | { type: 'gps'; latitude: number; longitude: number; accuracy?: number }
+  | {
+      type: 'gps';
+      latitude: number;
+      longitude: number;
+      accuracy?: number;
+      areaId?: string;
+    }
   | { type: 'manual'; text: string };
 
 export type ParkingEvent = {
