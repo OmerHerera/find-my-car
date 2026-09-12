@@ -34,7 +34,7 @@ export const zones: Zone[] = [
     ],
     message: {
       en: 'Parked near the entrance',
-      he: 'חניתי ליד הכניסה',
+      he: 'בכניסה לרחוב',
     },
   },
   {
@@ -48,7 +48,7 @@ export const zones: Zone[] = [
     ],
     message: {
       en: 'Parked on the left side',
-      he: 'חניתי בצד שמאל',
+      he: 'בשמאל',
     },
   },
   {
@@ -62,7 +62,7 @@ export const zones: Zone[] = [
     ],
     message: {
       en: 'Parked on the right side',
-      he: 'חניתי בצד ימין',
+      he: 'בימין',
     },
   },
 ];
