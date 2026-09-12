@@ -26,10 +26,11 @@ export const zones: Zone[] = [
     id: 'entrance',
     shape: 'polygon',
     points: [
-      { lat: 32.1603166, lng: 34.8911792 },
-      { lat: 32.1599004, lng: 34.8912121 },
-      { lat: 32.1599034, lng: 34.8912739 },
-      { lat: 32.1603165, lng: 34.8912425 },
+      { lat: 32.1603124, lng: 34.8911047 },
+      { lat: 32.1603098, lng: 34.8910817 },
+      { lat: 32.1599112, lng: 34.8911002 },
+      { lat: 32.1599107, lng: 34.8913666 },
+      { lat: 32.1603119, lng: 34.89133 },
     ],
     message: {
       en: 'Parked near the entrance',
@@ -40,10 +41,10 @@ export const zones: Zone[] = [
     id: 'left-side',
     shape: 'polygon',
     points: [
-      { lat: 32.1599004, lng: 34.8912121 },
-      { lat: 32.1599603, lng: 34.8904843 },
-      { lat: 32.1598972, lng: 34.8904857 },
-      { lat: 32.159857, lng: 34.8912201 },
+      { lat: 32.1599849, lng: 34.8910971 },
+      { lat: 32.1600338, lng: 34.8903796 },
+      { lat: 32.159809, lng: 34.8903721 },
+      { lat: 32.1597558, lng: 34.8911038 },
     ],
     message: {
       en: 'Parked on the left side',
@@ -54,10 +55,10 @@ export const zones: Zone[] = [
     id: 'right-side',
     shape: 'polygon',
     points: [
-      { lat: 32.1599034, lng: 34.8912739 },
-      { lat: 32.1598591, lng: 34.8912736 },
-      { lat: 32.1598736, lng: 34.8919787 },
-      { lat: 32.1599256, lng: 34.8919802 },
+      { lat: 32.1600077, lng: 34.8913555 },
+      { lat: 32.1597628, lng: 34.8913768 },
+      { lat: 32.159784, lng: 34.8920847 },
+      { lat: 32.1600276, lng: 34.8920689 },
     ],
     message: {
       en: 'Parked on the right side',
