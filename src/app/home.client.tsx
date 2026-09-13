@@ -453,15 +453,15 @@ function ParkingDialog({
           areaId,
         };
         const address = await reverseGeocode(coords.latitude, coords.longitude);
+        const fallbackLocationText =
+          address ?? formatAddress(coords.latitude, coords.longitude);
 
         setGps({ ...nextGps, address });
         setSelectedQuickPick(null);
         setManual(
           areaId
-            ? (zoneMessage(areaId, locale) ??
-                address ??
-                formatAddress(coords.latitude, coords.longitude))
-            : '',
+            ? (zoneMessage(areaId, locale) ?? fallbackLocationText)
+            : fallbackLocationText,
         );
         setGeoStatus('success');
         setGeoMessage('');
