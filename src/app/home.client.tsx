@@ -344,6 +344,7 @@ function ParkingDialog({
 }) {
   const text = copy[locale];
   const inputRef = useRef<HTMLInputElement>(null);
+  const manualRef = useRef('');
   const [manual, setManual] = useState('');
   const [selectedQuickPick, setSelectedQuickPick] = useState<string | null>(
     null,
@@ -444,6 +445,16 @@ function ParkingDialog({
 
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
+        if (manualRef.current.trim()) {
+          setGps(undefined);
+          setSelectedQuickPick(null);
+          setGeoStatus('idle');
+          setGeoMessage('');
+          setAccuracyWarning('');
+          setMessage('');
+          return;
+        }
+
         const areaId = findZoneId(coords.latitude, coords.longitude);
         const nextGps = {
           type: 'gps' as const,
@@ -458,11 +469,13 @@ function ParkingDialog({
 
         setGps({ ...nextGps, address });
         setSelectedQuickPick(null);
-        setManual(
-          areaId
-            ? (zoneMessage(areaId, locale) ?? fallbackLocationText)
-            : fallbackLocationText,
-        );
+
+        if (areaId) {
+          setManual(zoneMessage(areaId, locale) ?? fallbackLocationText);
+        } else {
+          setManual(fallbackLocationText);
+        }
+
         setGeoStatus('success');
         setGeoMessage('');
         setMessage(text.gpsReady);
@@ -537,6 +550,10 @@ function ParkingDialog({
     setAccuracyWarning('');
     setMessage('');
   };
+
+  useEffect(() => {
+    manualRef.current = manual;
+  }, [manual]);
 
   useEffect(() => {
     const frameId = requestAnimationFrame(() => {
