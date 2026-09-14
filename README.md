@@ -122,6 +122,47 @@ type ParkingLocation =
 
 The latest event is the current parked location. `memberName` is nullable: if this browser has no saved name, the event is stored anonymously and displayed as `Unknown person`. A car with no event shows `Location unknown`.
 
+## Location Decision Flow
+
+When the user taps **Park here**, the dialog resolves a single `ParkingLocation` from two candidate sources — a GPS fix and a manual text field — using this priority order:
+
+```text
+GPS obtained AND manual field empty when GPS resolves
+  → type: 'gps'  { latitude, longitude, accuracy, areaId? }
+
+GPS obtained BUT manual field already had text when GPS resolved
+  → GPS result discarded
+  → type: 'manual'  { text }
+
+User typed in the manual field (typing clears any GPS result)
+  → type: 'manual'  { text }
+
+User selected a quick-pick preset (also clears any GPS result)
+  → type: 'manual'  { text }
+
+GPS failed (permission denied or timeout)
+  → falls through to manual text if present
+  → Save button stays disabled if manual is also empty
+
+Neither GPS nor manual text present
+  → location is undefined; Save button is disabled
+```
+
+**GPS path detail:**
+
+1. `navigator.geolocation.getCurrentPosition` is called immediately when the dialog opens.
+2. On success, if the manual field is already non-empty the GPS result is silently discarded (the user already chose a text location).
+3. Otherwise, `findZoneId(lat, lng)` checks the point against the named zones in `src/lib/zones.ts` (first match wins; list smaller zones before larger ones). If a zone matches, its ID is stored as `areaId` and its human-readable message is shown as the label.
+4. If no zone matches, a reverse-geocoded address or raw `lat, lon` string is used as the display label, but the stored type is still `'gps'`.
+
+**Manual path detail:**
+
+Any user keystroke or quick-pick selection clears the `gps` state, so the saved type is always `'manual'`.
+
+**What "current location" means:**
+
+The current parking is the most recent `parking_event` row (or localStorage entry) within the last 7 days. An older entry or no entry at all displays as `Location unknown`.
+
 ## Libraries
 
 - **Next.js + React + TypeScript:** browser UI and Node.js API in one Vercel-native deployment.
